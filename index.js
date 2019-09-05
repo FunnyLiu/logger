@@ -36,14 +36,17 @@ const colorCodes = {
 
 function dev (opts) {
   // print to console helper.
+  // 立即执行该函数
   const print = (function () {
     let transporter
+    // 设置自定义转换输出器
+    // 同时支持函数格式和对象格式
     if (typeof opts === 'function') {
       transporter = opts
     } else if (opts && opts.transporter) {
       transporter = opts.transporter
     }
-
+    // 输出，通过自定义输出流函数或者console.log
     return function printFunc (...args) {
       const str = util.format(...args)
       if (transporter) {
@@ -53,10 +56,12 @@ function dev (opts) {
       }
     }
   }())
-
+  // 返回的中间件函数
   return async function logger (ctx, next) {
     // request
+    // 通过Symbol.for获取私有变量或当前时间
     const start = ctx[Symbol.for('request-received.startTime')] ? ctx[Symbol.for('request-received.startTime')].getTime() : Date.now()
+    // <--代表请求开始
     print('  ' + chalk.gray('<--') +
       ' ' + chalk.bold('%s') +
       ' ' + chalk.gray('%s'),
@@ -64,13 +69,14 @@ function dev (opts) {
     ctx.originalUrl)
 
     try {
+      // 执行下一中间件
       await next()
     } catch (err) {
       // log uncaught downstream errors
       log(print, ctx, start, null, err)
       throw err
     }
-
+    // 接下来为后置操作
     // calculate the length of a streaming response
     // by intercepting the stream with a counter.
     // only necessary if a content-length header is currently not set.
@@ -89,10 +95,10 @@ function dev (opts) {
 
     const onfinish = done.bind(null, 'finish')
     const onclose = done.bind(null, 'close')
-
+    // 通过http.ServerResponse的finish和close事件判断响应结束
     res.once('finish', onfinish)
     res.once('close', onclose)
-
+    // 完成后执行log函数
     function done (event) {
       res.removeListener('finish', onfinish)
       res.removeListener('close', onclose)
@@ -104,7 +110,7 @@ function dev (opts) {
 /**
  * Log helper.
  */
-
+// 格式化日志内容
 function log (print, ctx, start, len, err, event) {
   // get the status code of the response
   const status = err
@@ -125,7 +131,7 @@ function log (print, ctx, start, len, err, event) {
   } else {
     length = bytes(len).toLowerCase()
   }
-
+  // -->代表响应结束
   const upstream = err ? chalk.red('xxx')
     : event === 'close' ? chalk.yellow('-x-')
       : chalk.gray('-->')
@@ -148,7 +154,7 @@ function log (print, ctx, start, len, err, event) {
  * In milliseconds if less than 10 seconds,
  * in seconds otherwise.
  */
-
+// 友好处理时间格式
 function time (start) {
   const delta = Date.now() - start
   return humanize(delta < 10000

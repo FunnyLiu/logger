@@ -19,6 +19,25 @@ ___Notice: `koa-logger@2` supports `koa@2`; if you want to use this module with 
 --> GET /users?page=2 200 466ms 4.66kb
 ```
 
+## 源码解读
+
+核心流程浓缩如下：
+
+``` js
+  // 拦截操作请求 request
+  console.log(`<-- ${ctx.method} ${ctx.url}`);
+
+  await next();
+
+  // 拦截操作响应 request
+  res.on('finish', () => {
+    console.log(`--> ${ctx.method} ${ctx.url}`);
+  });
+```
+
+通过洋葱模型，在请求时输出<--，再通过http.ServerResponse的finish和close事件判断响应结束，在响应时拦截输出-->。
+
+
 ## Installation
 
 ```js
